@@ -1,5 +1,9 @@
 #include <chibi/eval.h>
 
+char *scheme_stdlib =
+#include "../std.scm"
+;
+
 enum parsestate {
 	PARSE_NORMAL,
 	PARSE_COMMENT,
@@ -7,13 +11,13 @@ enum parsestate {
 	PARSE_STRING
 };
 
-void run_scheme(sexp ctx, char *str)
+void run_scheme(sexp ctx, char *str, FILE *out)
 {
 	sexp res = sexp_eval_string(ctx, str, -1, NULL);
 	if (sexp_stringp(res))
 	{
 		fprintf(
-			stdout, "%.*s",
+			out, "%.*s",
 			sexp_string_size(res),
 			sexp_string_data(res));
 	}
@@ -27,7 +31,7 @@ void run_scheme(sexp ctx, char *str)
 	}
 }
 
-int read_scheme(sexp ctx, FILE *in)
+int read_scheme(sexp ctx, FILE *in, FILE *out)
 {
 	// Init static buffer
 	static char *buf;
@@ -56,7 +60,7 @@ int read_scheme(sexp ctx, FILE *in)
 		int r = getc(in);
 		if (r == EOF)
 		{
-			fprintf(stderr, "Reached EOF while searching for a closing ).\n");
+			fprintf(stderr, "Reached EOF while searching for a closing ')'.\n");
 			return -1;
 		}
 		curr = r;
@@ -110,16 +114,25 @@ int read_scheme(sexp ctx, FILE *in)
 
 	// Run scheme with the buffer we created
 	buf[buflen++] = '\0';
-	run_scheme(ctx, buf);
+	run_scheme(ctx, buf, out);
 	return 0;
 }
 
-int preprocess(FILE *in, FILE *out)
+int preprocess(char *path, FILE *in, FILE *out)
 {
 	sexp ctx;
 	ctx = sexp_make_eval_context(NULL, NULL, NULL, 0, 0);
 	sexp_load_standard_env(ctx, NULL, SEXP_SEVEN);
 	sexp_load_standard_ports(ctx, NULL, NULL, out, stderr, 0);
+	sexp env = sexp_context_env(ctx);
+
+	sexp var_file = sexp_c_string(ctx, path, -1);
+	sexp var_file_name = sexp_c_string(ctx, "__file__", -1);
+	sexp_env_define(
+		ctx, env,
+		sexp_string_to_symbol(ctx, var_file_name), var_file);
+
+	run_scheme(ctx, scheme_stdlib, out);
 
 	char start[] = { '#', '#', '(' };
 	char pending[sizeof(start)];
@@ -185,7 +198,7 @@ int preprocess(FILE *in, FILE *out)
 			if (startidx == sizeof(start))
 			{
 				startidx = 0;
-				if (read_scheme(ctx, in) < 0)
+				if (read_scheme(ctx, in, out) < 0)
 					return -1;
 				continue;
 			}
@@ -193,6 +206,8 @@ int preprocess(FILE *in, FILE *out)
 		else if (startidx != 0)
 		{
 			fwrite(pending, 1, startidx, out);
+			startidx = 0;
+			fputc(curr, out);
 		}
 		else
 		{
@@ -203,8 +218,38 @@ int preprocess(FILE *in, FILE *out)
 	sexp_destroy_context(ctx);
 }
 
-int main() 
+int main(int argc, char *argv[])
 {
-	if (preprocess(stdin, stdout) < 0)
+	char *inpath = NULL;
+	FILE *in = stdin, *out = stdout;
+
+	if (argc > 1)
+	{
+		inpath = realpath(argv[1], NULL);
+		if (inpath == NULL)
+		{
+			perror(argv[1]);
+			return 1;
+		}
+
+		in = fopen(argv[1], "r");
+		if (in == NULL)
+		{
+			perror(argv[1]);
+			return 1;
+		}
+	}
+
+	if (argc > 2)
+	{
+		out = fopen(argv[2], "w");
+		if (out == NULL)
+		{
+			perror(argv[2]);
+			return 1;
+		}
+	}
+
+	if (preprocess(inpath, in, out) < 0)
 		return 1;
 }

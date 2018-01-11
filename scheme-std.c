@@ -15,4 +15,4 @@
 "          (else\n"
 "           (display ch)\n"
 "           (rec str (string-ref str k) (+ k 1) #f))))\n"
-"  (rec str (string-ref str 0) 1 #t))\n"
+"  (rec str (string-ref str 0) 1 #t))"

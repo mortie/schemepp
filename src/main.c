@@ -1,7 +1,7 @@
 #include <chibi/eval.h>
 
 char *scheme_stdlib =
-#include "../std.scm"
+#include "../scheme-std.c"
 ;
 
 enum parsestate {

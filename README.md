@@ -26,3 +26,11 @@ in place of the `##(...)`.
 	int main() {
 		printf("Hello from " ##(cstr __file__) "!\n");
 	}
+
+If that file is in, for example, `/home/foobar/src/something.sc`, it will
+compile down to this C code:
+
+	#include <stdio.h>
+	int main() {
+		printf("Hello from " "/home/foobar/src/something.sc" "!\n");
+	}

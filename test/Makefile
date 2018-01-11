@@ -1,7 +1,7 @@
 test: test.c
 	gcc -o $@ $<
 
-test.c: test.sc
+test.c: test.sc foo.txt
 	../schemepp $< $@
 
 clean:

@@ -123,7 +123,7 @@ int preprocess(char *path, FILE *in, FILE *out)
 	sexp ctx;
 	ctx = sexp_make_eval_context(NULL, NULL, NULL, 0, 0);
 	sexp_load_standard_env(ctx, NULL, SEXP_SEVEN);
-	sexp_load_standard_ports(ctx, NULL, NULL, out, stderr, 0);
+	sexp_load_standard_ports(ctx, NULL, NULL, stderr, stderr, 0);
 	sexp env = sexp_context_env(ctx);
 
 	sexp var_file = sexp_c_string(ctx, path, -1);

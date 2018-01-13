@@ -15,9 +15,8 @@ in place of the `##(...)`.
 
 ## Pre-defined functions and variables
 
-* `cstr`: A function which takes a Scheme string, and prints a C string
-  literal. Note that it doesn't _return_ a Scheme string; it just directly
-  outputs the literal to the C source code.
+* `cstr`: A function which takes a Scheme string, and returns a C string
+  literal.
 * `__file__`: A Scheme string which contains the absolute path of the current
   file, or `<stdin>` if input is from stdin.
 
